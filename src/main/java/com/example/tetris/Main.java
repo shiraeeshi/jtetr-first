@@ -1,34 +1,55 @@
 package com.example.tetris;
 
-import com.example.tetris.model.Arena;
-import com.example.tetris.model.figure.Figure;
-import com.example.tetris.model.level.Level;
-import com.example.tetris.model.level.NextFigureProvider;
+import com.example.tetris.view.ConsoleView;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.io.IOException;
+import java.util.Observable;
+import java.util.Observer;
 
-import static java.util.concurrent.TimeUnit.*;
+import jline.console.ConsoleReader;
+import jline.console.KeyMap;
+import jline.console.Operation;
 
 public class Main {
     public static void main(String[] args) {
-        final Arena arena = new Arena();
-        final NextFigureProvider level = new Level();
-        arena.setFigureIfPossible(level.nextFigure());
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        Runnable beeper = new Runnable() {
+        final Tetris tetris = new Tetris();
+        tetris.setView(new ConsoleView());
+//        tetris.setView(new Observer() {
+//            @Override
+//            public void update(Observable o, Object arg) {
+//                System.out.println("arena: " + o);
+//            }
+//        });
+        tetris.start();
+
+
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                if (!arena.descend()) {
-                    Figure nextFigure = level.nextFigure();
-                    if (!arena.setFigureIfPossible(nextFigure)) {
-                        System.out.println("Game over");
-                        System.exit(0);
+                try (ConsoleReader reader = new ConsoleReader()) {
+                    KeyMap km = KeyMap.keyMaps().get("vi-insert");
+                    while (true) {
+                        Object c = null;
+                        try {
+                            c = reader.readBinding(km);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        if (c == Operation.BACKWARD_CHAR) { // left arrow
+                            tetris.moveLeft();
+                        } else if (c == Operation.FORWARD_CHAR) { // right arrow
+                            tetris.moveRight();
+                        } else if (c == Operation.NEXT_HISTORY) { // down arrow
+                            tetris.descend();
+                        } else if (c == Operation.PREVIOUS_HISTORY) { // up arrow
+                            tetris.rotateClockwise();
+                        }
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
                 }
             }
-        };
-        final ScheduledFuture<?> beeperHandle = scheduler.scheduleAtFixedRate(beeper, 1, 1, SECONDS);
+        }).start();
     }
 }

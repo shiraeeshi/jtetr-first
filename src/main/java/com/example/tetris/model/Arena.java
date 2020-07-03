@@ -4,20 +4,31 @@ import com.example.tetris.model.figure.Figure;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Observable;
 
-public class Arena {
+public class Arena extends Observable {
     public static final int ARENA_WIDTH = 20;
-    public static final int ARENA_HEIGHT = 30;
+    public static final int ARENA_HEIGHT = 20;
 
     private Figure figure;
     private boolean[][] cells = new boolean[ARENA_HEIGHT][ARENA_WIDTH];
 
-    // if can move right, move right
-    // if can move left, move left
-    // if can rotate clockwise, rotate clockwise
-    // if can rotate counter-clockwise, rotate counter-clockwise
-    // if can descend, descend
-    // if can't descend, start with a new figure
+    public Figure getCurrentFigure() {
+        return figure;
+    }
+
+    public List<Point> getBricksOnTheFloor() {
+        List<Point> bricks = new LinkedList<>();
+        for (int rowIndex=0; rowIndex<ARENA_HEIGHT; rowIndex++) {
+            boolean[] row = cells[rowIndex];
+            for (int columnIndex=0; columnIndex<ARENA_WIDTH; columnIndex++) {
+                if (row[columnIndex]) {
+                    bricks.add(new Point(columnIndex, rowIndex));
+                }
+            }
+        }
+        return bricks;
+    }
 
     public void moveRight() {
         setFigureIfPossible(figure.moveRight());
@@ -35,9 +46,19 @@ public class Arena {
         return setFigureIfPossible(figure.descend());
     }
 
+    public void fixCurrentFigure() {
+        for (Point figurePoint: figure.getBricks()) {
+            int x = figurePoint.getX();
+            int y = figurePoint.getY();
+            cells[y][x] = true;
+        }
+        setChanged();
+    }
+
     public boolean setFigureIfPossible(Figure newFigure) {
         if (figureIsPossible(newFigure)) {
             this.figure = newFigure;
+            setChanged();
             return true;
         }
         return false;
@@ -54,13 +75,17 @@ public class Arena {
         return true;
     }
 
+    public boolean hasFullRows() {
+        return !findFullRowsIndices().isEmpty();
+    }
+
     public List<Integer> findFullRowsIndices() {
         List<Integer> fullRows = new LinkedList<>();
-        for (int rowIndex = 0; rowIndex < ARENA_HEIGHT; rowIndex++) {
+        outer: for (int rowIndex = 0; rowIndex < ARENA_HEIGHT; rowIndex++) {
             boolean[] row = cells[rowIndex];
             for (int cell = 0; cell < ARENA_WIDTH; cell++) {
                 if (!row[cell]) {
-                    continue;
+                    continue outer;
                 }
             }
             fullRows.add(rowIndex);
@@ -70,12 +95,12 @@ public class Arena {
 
     public void removeFullRows() {
         List<Integer> notFullRows = new LinkedList<>();
-        for (int rowIndex = 0; rowIndex < ARENA_HEIGHT; rowIndex++) {
+        outer: for (int rowIndex = 0; rowIndex < ARENA_HEIGHT; rowIndex++) {
             boolean[] row = cells[rowIndex];
             for (int cell = 0; cell < ARENA_WIDTH; cell++) {
                 if (!row[cell]) {
                     notFullRows.add(rowIndex);
-                    continue;
+                    continue outer;
                 }
             }
         }
@@ -89,5 +114,6 @@ public class Arena {
         for (int i = notFullRows.size(); i < ARENA_HEIGHT; i++) {
             cells[i] = new boolean[ARENA_WIDTH];
         }
+        setChanged();
     }
 }
