@@ -39,6 +39,10 @@ public class Tetris {
         this.beeperHandle = scheduler.scheduleAtFixedRate(beeper, 100, 300, MILLISECONDS);
     }
 
+    private boolean isRunning() {
+        return beeperHandle != null && !beeperHandle.isCancelled();
+    }
+
     private void cancelBeeper() {
         beeperHandle.cancel(true);
     }
@@ -104,4 +108,11 @@ public class Tetris {
         arena.notifyObservers();
     }
 
+    public synchronized void pauseOrResume() {
+        if (isRunning()) {
+            cancelBeeper();
+        } else {
+            startBeeper();
+        }
+    }
 }

@@ -27,6 +27,7 @@ public class Main {
             @Override
             public void run() {
                 try (ConsoleReader reader = new ConsoleReader()) {
+
                     KeyMap km = KeyMap.keyMaps().get("vi-insert");
                     while (true) {
                         Object c = null;
@@ -43,6 +44,8 @@ public class Main {
                             tetris.descend();
                         } else if (c == Operation.PREVIOUS_HISTORY) { // up arrow
                             tetris.rotateClockwise();
+                        } else if (c == Operation.ACCEPT_LINE) { // enter btn
+                            tetris.pauseOrResume();
                         }
                     }
                 } catch (IOException e) {
